@@ -239,7 +239,7 @@ function renderSummary(matches, reservedCount) {
     stat(open, 'with open seats'),
     stat(state.sessions.length, 'in catalog'),
     stat(reservedCount, 'reserved by you'),
-    state.filters.fits ? el('span', { text: 'Clashes hidden' }) : null);
+    ...(state.filters.fits ? [el('span', { text: 'Clashes hidden' })] : []));
 }
 
 function renderSync() {

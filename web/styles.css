@@ -217,3 +217,88 @@ h1, h2, h3 { line-height: 1.25; margin: 0; }
 .session__links .session__abstract { flex: 1 1 100%; order: 2; }
 .session__catalog { font-size: var(--text-sm); color: var(--accent); font-weight: 600; text-underline-offset: 2px; }
 .session__catalog:hover { color: var(--accent-hover); }
+
+/* ==== re:Invent night theme ============================================== */
+:root {
+  --ri-ink: #0c0a24;        /* deep night indigo */
+  --ri-ink-2: #1a1546;
+  --ri-violet: #7b4dff;
+  --ri-magenta: #e5307f;
+  --ri-orange: #ff9900;     /* AWS orange */
+  --ri-on-dark: #f4f2ff;
+  --ri-on-dark-2: #b9b3e6;
+
+  --accent: #5b2fe0;
+  --accent-hover: #4a22c4;
+  --focus: #e5307f;
+  --bg-page: #f5f4fb;
+  --bg-subtle: #eceaf7;
+  --border-default: #dcd8ee;
+  --border-strong: #9a94b8;
+  --text-secondary: #55516e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #a98bff;
+    --accent-hover: #c2adff;
+    --focus: #ff6fae;
+    --bg-page: #0c0a24;
+    --bg-surface: #161339;
+    --bg-subtle: #211c4d;
+    --border-default: #2f2966;
+    --border-strong: #5a5390;
+    --text-primary: #f4f2ff;
+    --text-secondary: #b9b3e6;
+    --text-inverse: #0c0a24;
+  }
+}
+
+/* Header: dark band with a magenta→orange energy line */
+.topbar { background: var(--ri-ink); border-bottom: 0; color: var(--ri-on-dark); }
+.topbar::after { content: ""; display: block; height: 3px;
+  background: linear-gradient(90deg, var(--ri-violet), var(--ri-magenta) 55%, var(--ri-orange)); }
+.topbar .btn--ghost { color: var(--ri-on-dark); border-color: #3a3375; }
+.topbar .btn--ghost:hover:not(:disabled) { background: var(--ri-ink-2); }
+.topbar .sync-status { color: var(--ri-on-dark-2); }
+
+/* Logo: three seats (last one open) + wordmark built from type */
+.brand { display: flex; align-items: center; gap: var(--space-3); color: var(--ri-on-dark); text-decoration: none; }
+.brand__seats { display: inline-flex; gap: 3px; align-items: flex-end; }
+.brand__seats i { width: 9px; height: 14px; border-radius: 3px 3px 1px 1px; background: #4a4385; }
+.brand__seats i:last-child { background: var(--ri-orange); box-shadow: 0 0 0 2px rgb(255 153 0 / .25); }
+.brand__word { font-weight: 800; font-size: 22px; letter-spacing: -0.03em; line-height: 1; }
+.brand__word b { color: var(--ri-orange); font-weight: 800; margin: 0 1px; }
+.brand__event { font-size: var(--text-xs); font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ri-on-dark-2); border-left: 1px solid #3a3375; padding-left: var(--space-3); }
+@media (max-width: 520px) { .brand__event { display: none; } }
+
+/* Primary actions: AWS orange on ink, high contrast */
+.btn--primary { background: var(--ri-orange); color: var(--ri-ink); }
+.btn--primary:hover:not(:disabled) { background: #ffad33; }
+
+/* Sign-in hero */
+.signin { max-width: none; margin: 0; padding: var(--space-7) var(--space-4) 64px;
+  background: radial-gradient(1200px 400px at 80% -10%, rgb(229 48 127 / .35), transparent 60%),
+              radial-gradient(900px 400px at 0% 0%, rgb(123 77 255 / .4), transparent 60%), var(--ri-ink);
+  color: var(--ri-on-dark); justify-items: center; text-align: center; }
+.signin > * { max-width: 680px; }
+.signin__kicker { margin: 0; font-size: var(--text-xs); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ri-orange); }
+.signin__title { font-size: clamp(32px, 6vw, 52px); font-weight: 800; letter-spacing: -0.03em; }
+.signin__title em { font-style: normal; background: linear-gradient(90deg, var(--ri-magenta), var(--ri-orange));
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.signin__lead, .signin__fine { color: var(--ri-on-dark-2); }
+
+/* Selected cards + day tabs pick up the brand */
+.session--selected { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--ri-magenta); }
+.day-tab[aria-pressed="true"] { background: var(--ri-ink); color: var(--ri-on-dark); border-color: var(--ri-ink); }
+@media (prefers-color-scheme: dark) { .day-tab[aria-pressed="true"] { background: var(--ri-orange); color: var(--ri-ink); border-color: var(--ri-orange); } }
+.session:hover { border-color: var(--border-strong); }
+.badge--mine { background: var(--ri-violet); color: #fff; }
+.summary strong { font-size: var(--text-lg); }
+
+/* Action bar: dark band like the header */
+.action-bar { background: var(--ri-ink); color: var(--ri-on-dark); border-top: 0; }
+.action-bar::before { content: ""; display: block; height: 3px;
+  background: linear-gradient(90deg, var(--ri-violet), var(--ri-magenta) 55%, var(--ri-orange)); }
+.action-bar .btn--ghost, .action-bar .btn--secondary { color: var(--ri-on-dark); background: transparent; border-color: #4a4385; }
+.action-bar .btn--ghost:hover:not(:disabled), .action-bar .btn--secondary:hover:not(:disabled) { background: var(--ri-ink-2); }

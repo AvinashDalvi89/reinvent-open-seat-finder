@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Open Seats · re:Invent 2026</title>
+  <meta name="theme-color" content="#0c0a24">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230c0a24'/%3E%3Crect x='5' y='11' width='6' height='13' rx='2' fill='%234a4385'/%3E%3Crect x='13' y='11' width='6' height='13' rx='2' fill='%234a4385'/%3E%3Crect x='21' y='11' width='6' height='13' rx='2' fill='%23ff9900'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/styles.css">
   <script type="module" src="/js/main.js"></script>
 </head>
@@ -12,11 +14,11 @@
 
   <header class="topbar">
     <div class="topbar__inner">
-      <div class="brand">
-        <span class="brand__mark" aria-hidden="true">●</span>
-        <span class="brand__name">Open Seats</span>
-        <span class="brand__event">re:Invent 2026</span>
-      </div>
+      <a class="brand" href="/" aria-label="Open Seats for re:Invent 2026, home">
+        <span class="brand__seats" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="brand__word" aria-hidden="true">open<b>:</b>seats</span>
+        <span class="brand__event" aria-hidden="true">for re:Invent 2026</span>
+      </a>
       <div class="topbar__actions">
         <span id="sync-status" class="sync-status" role="status" aria-live="polite"></span>
         <a class="btn btn--ghost" href="https://registration.awsevents.com/flow/awsevents/reinvent2026/event-catalog/page/eventCatalog" target="_blank" rel="noopener noreferrer">Official catalog <span aria-hidden="true">↗</span><span class="sr-only">(opens in a new tab)</span></a>
@@ -28,7 +30,8 @@
 
   <!-- Signed-out view -->
   <main id="signin-view" class="signin" hidden>
-    <h1 class="signin__title">Find re:Invent sessions you can still get into.</h1>
+    <p class="signin__kicker">re:Invent 2026 · Las Vegas</p>
+    <h1 class="signin__title">Find sessions you can <em>still</em> get into.</h1>
     <p class="signin__lead">
       The catalog shows every session, full or not. Open Seats pulls the whole catalog through the
       official Events API, hides full sessions and anything that clashes with your schedule,
