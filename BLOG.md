@@ -1,26 +1,20 @@
-# Butter Chicken on the Stove, re:Invent Catalog on the Laptop: How I Built Open Seats to Find Sessions I Can Still Get Into
+# Diwali, Butter Chicken and a Full re:Invent Catalog: How I Built Open Seats to Find Sessions I Can Still Attend
 
-AWS re:Invent is about one month away. People already started sending me meeting invites, and I have to tell them which slots I am free. But I didn't reserve my sessions yet. I kept putting it off. And by the time I sat down to do it, I already lost almost 6-7 sessions which I really wanted to attend. All full.
-
-So this blog is about a small tool I built for myself, while I was cooking butter chicken curry in the kitchen. Yes, both at the same time.
+AWS re:Invent is almost 1 month from now. I was looking to reserve my seat for some specific talks and chalk talks. I tried multiple times, but I could not find anything. And I kept postponing things. By the time I sat down properly, I already lost almost 6-7 sessions which I really wanted to attend.
 
 ## The Problem That Started It All
 
-I wanted to reserve seats for some specific talks and chalk talks. My interests are simple: AWS, serverless, agentic AI and architecture.
+Now the event is getting closer, so I need to start planning my schedule. People are reaching out, sending meeting invites and everything. So I need to know first: what are the sessions I am going to attend?
 
-I opened the event catalog and started checking sessions one by one. First one, full. Second one, full. Then next one also full. The catalog shows every session, whether it has seat or not. There is no good filter for "has seats left". There is also no way to say "show me only what fits in my free time".
+I checked the event catalog. Most of the talks were at full capacity. And I did not find any good option for filtering. There is no filter for "has seats left". I wanted to filter out which sessions are available, which I can target, and which also match my interest: AWS, serverless, agentic AI and architecture.
 
 I didn't want to open every session one by one and check. Later I found the catalog has 2,485 sessions. Nobody can check that by hand.
 
-## Two Things at Once: Curry and Code
+So I started thinking, why not build something? If it solves my problem, it can help other people also.
 
-This was a Saturday. I was cooking butter chicken curry, and building this tool at the same time. Between cooking steps I was going back to the laptop.
+## First Thing I Did: Inspect Element
 
-[TODO: add one or two real lines from your cooking side, for example what step the curry was at when the tool first worked]
-
-## First Thing I Did: Opened Dev Tools
-
-So, I opened the browser dev tools and checked the network calls behind the session listing. The catalog page calls a sessions API, and in the response I found exactly what I needed:
+So, I did inspect element on the catalog page and checked the APIs behind it. There is a `sessions` API, and in the response I found some parameters which actually helped me:
 
 ```json
 "viewAccessPublic": true,
@@ -28,13 +22,23 @@ So, I opened the browser dev tools and checked the network calls behind the sess
 "waitlistRemaining": 0,
 ```
 
-That means data is already there. I can know which sessions have seats, which have only waitlist, and which are completely full. I was thinking to write a small script with this request, copied as curl from the browser.
+This is what I saw in Chrome DevTools, in the Network tab, for the `sessions` call. Here it is for the chalk talk *Full stack development on AWS: bring your questions* (DVT333). Both `seatsRemaining` and `waitlistRemaining` are `0`, so no seat and no waitlist also.
 
-But there were problems with this approach. The curl had my session cookies and auth token inside it. Those tokens expire, and anyone who gets that curl can act as me on the registration site. Also this is an internal API of the website, not something built for us developers.
+![Chrome DevTools Network tab showing seatsRemaining and waitlistRemaining in the sessions API response](screenshots/devtools-seat-params.png)
+
+So the data is already there. I can know which sessions have seats, which have only waitlist, and which are completely full. I found, okay, why not build a small tool with this?
+
+## Diwali, Butter Chicken and a Hackathon Mail
+
+Today is Diwali. Already cooking is happening at home, and I am making butter chicken today. In between, I got a mail about the re:Invent event catalog API hackathon, and today is the deadline.
+
+So it is a kind of good combination. The tool will solve my problem, and I can participate in the hackathon with it also. So I was doing both things together, cooking butter chicken and building this tool.
+
+But there was one problem with the inspect element approach. The request I copied as curl from the browser had my session cookies and auth token inside it. Those tokens expire, and anyone who gets that curl can act as me on the registration site. Also this is an internal API of the website, not something built for us developers.
 
 ## Then I Found the Official Events API
 
-The re:Invent event catalog API hackathon was running at the same time. While reading the hackathon page, I found that for the first time AWS opened programmatic access to the re:Invent 2026 session catalog. It comes with two front doors: a REST API (OpenAPI 3.1) and a remote MCP server for AI agents. Every operation is available on both.
+While reading the hackathon page, I found that for the first time AWS opened programmatic access to the re:Invent 2026 session catalog. It comes with two front doors: a REST API (OpenAPI 3.1) and a remote MCP server for AI agents. Every operation is available on both.
 
 What I can do with it:
 
@@ -147,8 +151,6 @@ Reading the docs carefully saved me from few bugs.
 ## What's Next
 
 Next I want to add a watch mode, which checks a full session I favorited and tells me when a seat opens up. People cancel, so seats do come back. I also want to try the same logic through the MCP server, so I can ask an agent "fill my Tuesday afternoon with open serverless sessions".
-
-[TODO: one closing line about how the butter chicken came out, if you want]
 
 If you are going to re:Invent and also tired of seeing "Full", try it and tell me what filter you want next.
 
