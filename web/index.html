@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Open Seats · re:Invent 2026</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/js/main.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#results">Skip to sessions</a>
+
+  <header class="topbar">
+    <div class="topbar__inner">
+      <div class="brand">
+        <span class="brand__mark" aria-hidden="true">●</span>
+        <span class="brand__name">Open Seats</span>
+        <span class="brand__event">re:Invent 2026</span>
+      </div>
+      <div class="topbar__actions">
+        <span id="sync-status" class="sync-status" role="status" aria-live="polite"></span>
+        <a class="btn btn--ghost" href="https://registration.awsevents.com/flow/awsevents/reinvent2026/event-catalog/page/eventCatalog" target="_blank" rel="noopener noreferrer">Official catalog <span aria-hidden="true">↗</span><span class="sr-only">(opens in a new tab)</span></a>
+        <button id="refresh-btn" class="btn btn--ghost" type="button" hidden>Refresh seats</button>
+        <button id="signout-btn" class="btn btn--ghost" type="button" hidden>Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Signed-out view -->
+  <main id="signin-view" class="signin" hidden>
+    <h1 class="signin__title">Find re:Invent sessions you can still get into.</h1>
+    <p class="signin__lead">
+      The catalog shows every session, full or not. Open Seats pulls the whole catalog through the
+      official Events API, hides full sessions and anything that clashes with your schedule,
+      and reserves your picks in one step.
+    </p>
+    <a class="btn btn--primary btn--lg" href="/auth/login">Sign in with AWS Builder ID</a>
+    <p id="signin-error" class="notice notice--error" role="alert" hidden>
+      Sign-in didn't complete. Try again; if it keeps failing, check that you're registered for re:Invent 2026.
+    </p>
+    <p class="signin__fine">Your tokens stay on this machine, in the local server's memory.</p>
+  </main>
+
+  <!-- Signed-in view -->
+  <div id="app-view" class="layout" hidden>
+    <aside class="filters" aria-labelledby="filters-heading">
+      <h2 id="filters-heading" class="filters__heading">Filters</h2>
+
+      <div class="field">
+        <label for="q" class="field__label">Search</label>
+        <input id="q" class="input" type="search" placeholder="Title, code, speaker, topic" autocomplete="off">
+      </div>
+
+      <fieldset class="field">
+        <legend class="field__label">Availability</legend>
+        <div id="avail-options" class="checks"></div>
+      </fieldset>
+
+      <div class="field">
+        <label class="switch">
+          <input id="fits" type="checkbox">
+          <span>Only sessions that fit my schedule</span>
+        </label>
+        <p class="field__hint">Hides anything overlapping your reservations or personal time.</p>
+      </div>
+
+      <div class="field">
+        <label for="type" class="field__label">Session type</label>
+        <select id="type" class="input"><option value="">All types</option></select>
+      </div>
+
+      <div class="field">
+        <label for="level" class="field__label">Level</label>
+        <select id="level" class="input"><option value="">All levels</option></select>
+      </div>
+
+      <div class="field">
+        <label for="topic" class="field__label">Topic</label>
+        <select id="topic" class="input"><option value="">All topics</option></select>
+      </div>
+
+      <button id="reset-btn" class="btn btn--ghost btn--block" type="button">Reset filters</button>
+    </aside>
+
+    <main class="content" id="results" tabindex="-1">
+      <nav class="days" aria-label="Day">
+        <div id="day-tabs" class="days__tabs" role="group"></div>
+      </nav>
+
+      <section id="summary" class="summary" aria-live="polite"></section>
+
+      <section id="state" class="state" hidden></section>
+
+      <ul id="session-list" class="session-list" aria-label="Sessions"></ul>
+      <div class="more">
+        <button id="more-btn" class="btn btn--ghost" type="button" hidden>Show more</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Selection action bar -->
+  <div id="action-bar" class="action-bar" role="region" aria-label="Selected sessions" hidden>
+    <div class="action-bar__inner">
+      <span id="selection-count" class="action-bar__count"></span>
+      <button id="clear-sel-btn" class="btn btn--ghost" type="button">Clear</button>
+      <button id="fav-btn" class="btn btn--secondary" type="button">Add to favorites</button>
+      <button id="reserve-btn" class="btn btn--primary" type="button">Reserve seats</button>
+    </div>
+  </div>
+
+  <!-- Results of a reserve / favorite request -->
+  <dialog id="result-dialog" class="dialog" aria-labelledby="result-title">
+    <h2 id="result-title" class="dialog__title"></h2>
+    <ul id="result-list" class="result-list"></ul>
+    <div class="dialog__actions">
+      <button id="result-close" class="btn btn--primary" type="button">Done</button>
+    </div>
+  </dialog>
+</body>
+</html>
