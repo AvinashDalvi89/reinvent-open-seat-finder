@@ -120,7 +120,8 @@ works at 320px wide and up.
 - `seatAvailability` is a band, not an exact seat count, and it changes constantly. Use **Refresh seats**
   before reserving.
 - Clash detection uses each session's listed start time and length in the event's local time (Las Vegas).
-  It doesn't account for travel time between venues.
+  With **Fits my schedule** on, it also allows for travel time between venues. Those travel times are
+  rough estimates, not official figures. Edit them in `web/js/venues.js` if your experience on site differs.
 
 ## License
 
