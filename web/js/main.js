@@ -1,8 +1,10 @@
 import * as api from './api.js';
 import {
-  AVAILABILITY, OPEN_BANDS, band, busyBlocks, facets, formatDay, matchesExceptDay, searchText, sortSessions,
+  AVAILABILITY, OPEN_BANDS, DEFAULT_BANDS, band, busyBlocks, facets, formatDay, matchesExceptDay, searchText, sortSessions,
 } from './model.js';
 import { el, sessionItem, skeletonList, loadingState, emptyState, errorState, resultItems } from './render.js';
+import { renderPlanner } from './planner.js';
+import { eventServices, wallClock } from './ideas.js';
 
 const PAGE = 60;
 const MAX_PICK = 10; // ReserveSessions / AssociateFavorites accept 1-10 ids
@@ -14,6 +16,8 @@ const state = {
   text: new Map(),
   schedule: { reserved: [], favorites: [], personalTime: [] },
   blocks: [],
+  calendar: [],
+  services: {},
   selected: new Set(),
   shown: PAGE,
   filters: readFilters(),
@@ -25,8 +29,10 @@ function readFilters() {
   const p = new URLSearchParams(location.search);
   return {
     q: p.get('q') || '',
-    bands: p.has('bands') ? p.get('bands').split(',').filter(Boolean) : [...OPEN_BANDS],
+    bands: p.has('bands') ? p.get('bands').split(',').filter(Boolean) : [...DEFAULT_BANDS],
     fits: p.get('fits') === '1',
+    talks: p.get('talks') === '1',
+    view: p.get('view') === 'week' ? 'week' : 'list',
     type: p.get('type') || '',
     level: p.get('level') || '',
     topic: p.get('topic') || '',
@@ -37,8 +43,10 @@ function readFilters() {
 function writeFilters() {
   const f = state.filters, p = new URLSearchParams();
   if (f.q) p.set('q', f.q);
-  if (f.bands.join() !== OPEN_BANDS.join()) p.set('bands', f.bands.join(','));
+  if (f.bands.join() !== DEFAULT_BANDS.join()) p.set('bands', f.bands.join(','));
   if (f.fits) p.set('fits', '1');
+  if (f.talks) p.set('talks', '1');
+  if (f.view === 'week') p.set('view', 'week');
   for (const k of ['type', 'level', 'topic', 'day']) if (f[k]) p.set(k, f[k]);
   history.replaceState(null, '', `${location.pathname}${p.toString() ? `?${p}` : ''}`);
 }
@@ -84,13 +92,16 @@ async function load() {
   list.replaceChildren(...skeletonList());
   $('summary').replaceChildren();
   try {
-    const [sessions, schedule] = await Promise.all([
+    const [sessions, schedule, calendar] = await Promise.all([
       api.loadAllSessions((n, total) => stateEl.replaceChildren(...loadingState(n, total))),
       api.getSchedule(),
+      api.loadCalendar(),
     ]);
+    state.calendar = calendar;
     state.sessions = sortSessions(sessions);
     state.byId = new Map(sessions.map((s) => [s.sessionId, s]));
     state.text = new Map(sessions.map((s) => [s.sessionId, searchText(s)]));
+    state.services = eventServices(sessions);
     setSchedule(schedule);
     state.loadedAt = new Date();
     stateEl.hidden = true;
@@ -108,7 +119,7 @@ async function load() {
 
 function setSchedule(schedule) {
   state.schedule = schedule;
-  state.blocks = busyBlocks(schedule, state.byId);
+  state.blocks = busyBlocks(schedule, state.byId, state.calendar);
 }
 
 // ---- Controls -----------------------------------------------------------
@@ -121,6 +132,16 @@ function bindControls() {
   });
   $('fits').checked = state.filters.fits;
   $('fits').addEventListener('change', (e) => setFilter({ fits: e.target.checked }));
+  $('talks').checked = state.filters.talks;
+  $('talks').addEventListener('change', (e) => setFilter({ talks: e.target.checked }));
+  for (const btn of document.querySelectorAll('[data-view]')) {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.view;
+      // The planner is per day: default to the first day with something on it.
+      const day = state.filters.day || (view === 'week' ? firstBusyDay() : '');
+      setFilter({ view, day });
+    });
+  }
   for (const k of ['type', 'level', 'topic']) $(k).addEventListener('change', (e) => setFilter({ [k]: e.target.value }));
   $('reset-btn').addEventListener('click', resetFilters);
   $('more-btn').addEventListener('click', () => { state.shown += PAGE; render(); });
@@ -133,9 +154,10 @@ function bindControls() {
 }
 
 function resetFilters() {
-  state.filters = { q: '', bands: [...OPEN_BANDS], fits: false, type: '', level: '', topic: '', day: state.filters.day };
+  state.filters = { q: '', bands: [...DEFAULT_BANDS], fits: false, talks: false, type: '', level: '', topic: '', day: state.filters.day, view: state.filters.view };
   $('q').value = '';
   $('fits').checked = false;
+  $('talks').checked = false;
   for (const k of ['type', 'level', 'topic']) $(k).value = '';
   state.shown = PAGE;
   writeFilters();
@@ -185,26 +207,49 @@ function render() {
 
   renderSummary(matches, reserved.size);
   const full = state.selected.size >= MAX_PICK;
-  $('session-list').replaceChildren(...rows.slice(0, state.shown).map((s) => sessionItem(s, {
+  const itemOpts = (s) => ({
     selected: state.selected.has(s.sessionId),
     mine: reserved.has(s.sessionId),
     fav: favorites.has(s.sessionId),
     blocks: state.blocks,
     disabled: full,
     onToggle: toggle,
-  })));
-  $('more-btn').hidden = rows.length <= state.shown;
-  $('more-btn').textContent = `Show more (${(rows.length - state.shown).toLocaleString()} left)`;
+    onRemove: removeFromSchedule,
+  });
 
+  const week = f.view === 'week';
+  for (const btn of document.querySelectorAll('[data-view]')) btn.setAttribute('aria-pressed', String(btn.dataset.view === f.view));
+  $('planner').hidden = !week;
+  $('session-list').hidden = week;
   const stateEl = $('state');
-  if (!matches.length && state.sessions.length) {
-    stateEl.hidden = false;
-    stateEl.replaceChildren(...emptyState(resetFilters));
-  } else if (state.sessions.length) {
-    stateEl.hidden = true;
+
+  if (week) {
+    $('more-btn').hidden = true;
+    if (state.sessions.length) stateEl.hidden = true;
+    renderPlanner($('planner'), {
+      day: f.day, calendar: state.calendar, schedule: state.schedule, byId: state.byId,
+      candidates: dayMatches, blocks: state.blocks, services: state.services, itemOpts,
+      onRemove: removeFromSchedule, onBlock: blockTime,
+    });
+  } else {
+    $('session-list').replaceChildren(...rows.slice(0, state.shown).map((s) => sessionItem(s, itemOpts(s))));
+    $('more-btn').hidden = rows.length <= state.shown;
+    $('more-btn').textContent = `Show more (${(rows.length - state.shown).toLocaleString()} left)`;
+    if (!matches.length && state.sessions.length) {
+      stateEl.hidden = false;
+      stateEl.replaceChildren(...emptyState(resetFilters));
+    } else if (state.sessions.length) {
+      stateEl.hidden = true;
+    }
   }
   renderActionBar();
   renderSync();
+}
+
+function firstBusyDay() {
+  const days = state.days || [];
+  const busy = new Set(state.blocks.map((b) => b.day));
+  return days.find((d) => busy.has(d)) || days[0] || '';
 }
 
 function renderBandOptions(counts) {
@@ -228,7 +273,7 @@ function renderDayTabs(matches) {
     onclick: () => setFilter({ day: value }),
   }, label, el('span', { class: 'day-tab__count', text: n.toLocaleString() }));
   $('day-tabs').replaceChildren(
-    tab('', 'All days', matches.length),
+    ...(state.filters.view === 'week' ? [] : [tab('', 'All days', matches.length)]),
     ...(state.days || []).map((d) => tab(d, formatDay(d), counts[d] || 0)));
 }
 
@@ -282,6 +327,38 @@ async function submit(kind) {
   buttons.forEach((b) => { b.disabled = false; });
   render();
   showResult(kind, result);
+}
+
+/** Cancel a reservation or drop a favorite, then reload the schedule. Errors bubble to the button. */
+async function removeFromSchedule(kind, id) {
+  const s = state.byId.get(id);
+  const pt = (state.schedule.personalTime || []).find((p) => p.personalTimeId === id);
+  const name = s?.abbreviation || s?.title || pt?.title || id;
+  if (kind === 'reserved') await api.cancelReservation(id);
+  else if (kind === 'personal') await api.deletePersonalTime(id);
+  else await api.unfavorite(id);
+  try { setSchedule(await api.getSchedule()); } catch { /* refresh fixes it */ }
+  render();
+  $('sync-status').textContent = {
+    reserved: `Cancelled ${name}. Seat given back.`,
+    personal: `Removed "${name}" block.`,
+    favorite: `Removed ${name} from favorites.`,
+  }[kind];
+}
+
+/** Turn a suggested lunch / Expo / break slot into re:Invent personal time. */
+async function blockTime(idea) {
+  const day = state.filters.day;
+  await api.createPersonalTime({
+    title: idea.title,
+    description: idea.detail.slice(0, 250),
+    startDateTime: wallClock(day, idea.start),
+    endDateTime: wallClock(day, idea.end),
+    ...(idea.location ? { location: idea.location.slice(0, 255) } : {}),
+  });
+  try { setSchedule(await api.getSchedule()); } catch { /* refresh fixes it */ }
+  render();
+  $('sync-status').textContent = `Blocked ${idea.title} on your re:Invent schedule.`;
 }
 
 function showResult(kind, result, errorMessage) {

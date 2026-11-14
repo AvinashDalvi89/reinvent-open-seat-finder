@@ -61,10 +61,18 @@
 
       <div class="field">
         <label class="switch">
+          <input id="talks" type="checkbox">
+          <span>Talks only</span>
+        </label>
+        <p class="field__hint">Breakouts, lightning, chalk and code talks. No workshops or labs.</p>
+      </div>
+
+      <div class="field">
+        <label class="switch">
           <input id="fits" type="checkbox">
           <span>Only sessions that fit my schedule</span>
         </label>
-        <p class="field__hint">Hides anything overlapping your reservations or personal time.</p>
+        <p class="field__hint">Hides anything overlapping your reservations, personal time or calendar, including travel time between venues.</p>
       </div>
 
       <div class="field">
@@ -86,6 +94,11 @@
     </aside>
 
     <main class="content" id="results" tabindex="-1">
+      <div class="views" role="group" aria-label="View">
+        <button type="button" class="view-btn" data-view="list" aria-pressed="true">Sessions</button>
+        <button type="button" class="view-btn" data-view="week" aria-pressed="false">My week</button>
+      </div>
+
       <nav class="days" aria-label="Day">
         <div id="day-tabs" class="days__tabs" role="group"></div>
       </nav>
@@ -95,6 +108,7 @@
       <section id="state" class="state" hidden></section>
 
       <ul id="session-list" class="session-list" aria-label="Sessions"></ul>
+      <section id="planner" class="planner" aria-label="My week" hidden></section>
       <div class="more">
         <button id="more-btn" class="btn btn--ghost" type="button" hidden>Show more</button>
       </div>

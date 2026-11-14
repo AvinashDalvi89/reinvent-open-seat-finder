@@ -36,6 +36,8 @@ REVOKE_URL = "https://oauth.awsevents.com/oauth2/revoke"
 API_BASE = "https://api.awsevents.com/v1"
 SCOPE = "openid email events/access"
 WEB_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
+# Optional personal calendar (git-ignored). See README "My week planner".
+CALENDAR_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "calendar.json")
 ALLOWED_HOSTS = {"localhost:%d" % PORT, "127.0.0.1:%d" % PORT}
 CSRF_HEADER = "X-Open-Seats"  # custom header: cross-site pages can't send it without a preflight we never answer
 
@@ -163,6 +165,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._login()
         if url.path == "/callback":
             return self._callback(urllib.parse.parse_qs(url.query))
+        if url.path == "/local/calendar.json":
+            if not os.path.isfile(CALENDAR_FILE):
+                return self._json(404, {"message": "No data/calendar.json"})
+            with open(CALENDAR_FILE, "rb") as fh:
+                return self._send(200, fh.read())
         if url.path == "/auth/status":
             return self._json(200, {"signedIn": tokens.signed_in})
         if url.path.startswith("/api/"):

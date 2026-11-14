@@ -25,6 +25,27 @@ your picks in one step.
   `Retry-After` on `429`, refreshes the token once on `401` and then asks you to sign in again, and never
   retries a reservation automatically.
 
+## My week planner (optional, personal)
+
+Switch to **My week** to see one day as an agenda in Las Vegas time (PT). It shows your meetings,
+reservations and favorites, the travel time between venues (with a warning when a hop is too tight),
+and the sessions that fit each free gap under your current filters.
+
+To include your own meetings, create `data/calendar.json` (git-ignored, served only to localhost):
+
+```json
+{
+  "timezone": "America/Los_Angeles",
+  "events": [
+    { "title": "Customer meeting", "start": "2026-11-30T11:00", "end": "2026-11-30T11:45",
+      "location": "Caesars Forum", "busy": true }
+  ]
+}
+```
+
+Times are wall-clock Las Vegas time. `busy: false` events are shown but don't block sessions. Venue travel
+times are estimates in `web/js/venues.js`. Edit them if your experience on site differs.
+
 ## How it works
 
 ```

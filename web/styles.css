@@ -302,3 +302,116 @@ h1, h2, h3 { line-height: 1.25; margin: 0; }
   background: linear-gradient(90deg, var(--ri-violet), var(--ri-magenta) 55%, var(--ri-orange)); }
 .action-bar .btn--ghost, .action-bar .btn--secondary { color: var(--ri-on-dark); background: transparent; border-color: #4a4385; }
 .action-bar .btn--ghost:hover:not(:disabled), .action-bar .btn--secondary:hover:not(:disabled) { background: var(--ri-ink-2); }
+
+/* ==== View switch + My week planner ===================================== */
+.views { display: inline-flex; padding: 3px; gap: 3px; background: var(--bg-subtle); border-radius: var(--radius-md); width: fit-content; }
+.view-btn { min-height: 36px; padding: 0 var(--space-4); font: inherit; font-size: var(--text-sm); font-weight: 600;
+  color: var(--text-secondary); background: transparent; border: 0; border-radius: var(--radius-sm); cursor: pointer; }
+.view-btn[aria-pressed="true"] { background: var(--bg-surface); color: var(--text-primary); box-shadow: 0 1px 2px rgb(0 0 0 / .12); }
+
+.planner { display: grid; gap: var(--space-3); }
+.plan-note { margin: 0; font-size: var(--text-xs); color: var(--text-secondary); }
+.plan-empty { margin: 0; color: var(--text-secondary); }
+.plan { list-style: none; margin: 0; padding: 0 0 0 var(--space-4); display: grid; gap: var(--space-2);
+  border-left: 2px solid var(--border-default); }
+
+.plan-item { position: relative; display: grid; grid-template-columns: 112px 1fr; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4); background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.plan-item::before { content: ""; position: absolute; left: calc(-1 * var(--space-4) - 7px); top: 18px;
+  width: 12px; height: 12px; border-radius: 50%; background: var(--border-strong); border: 2px solid var(--bg-page); }
+.plan-item--calendar::before { background: var(--text-primary); }
+.plan-item--reserved::before { background: var(--ri-violet); }
+.plan-item--favorite::before { background: var(--ri-orange); }
+.plan-item--tentative { border-style: dashed; background: transparent; }
+.plan-item--favorite { border-style: dashed; }
+.plan-item--conflict { border-color: var(--danger-fg); }
+.plan-item__time { font-size: var(--text-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
+.plan-item__body { display: grid; gap: 2px; min-width: 0; }
+.plan-item__top { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+.plan-item__title { font-weight: 600; }
+.plan-item__where { font-size: var(--text-sm); color: var(--text-secondary); }
+.plan-tag { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); }
+.plan-item--reserved .plan-tag { color: var(--accent); }
+.plan-warn { font-size: var(--text-sm); font-weight: 600; color: var(--danger-fg); }
+@media (max-width: 560px) { .plan-item { grid-template-columns: 1fr; } }
+
+.plan-hop { font-size: var(--text-xs); color: var(--text-secondary); padding: 0 var(--space-2); }
+.plan-hop--tight { color: var(--danger-fg); font-weight: 700; }
+
+.plan-gap { padding: var(--space-3) var(--space-4); border: 1px dashed var(--border-strong); border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--avail-available-bg) 45%, transparent); }
+.plan-gap > summary { cursor: pointer; font-weight: 600; font-size: var(--text-sm); color: var(--avail-available-fg); }
+.plan-gap--empty { font-size: var(--text-sm); color: var(--text-secondary); background: transparent; }
+.plan-gap__list { margin-top: var(--space-3); }
+
+/* Remove / cancel actions */
+.btn--sm { min-height: 32px; padding: 0 var(--space-3); font-size: var(--text-xs); }
+.btn--danger { background: var(--danger-fg); color: #fff; }
+.btn--danger:hover:not(:disabled) { filter: brightness(1.1); }
+.remove { display: inline-flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
+.plan-item__actions { margin-top: var(--space-2); }
+.plan-item--favorite.plan-item--conflict { border-style: dashed; }
+
+/* ==== Day route (Strip diagram) ========================================= */
+.route { display: grid; gap: var(--space-3); padding: var(--space-4); background: var(--bg-surface);
+  border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.route__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.route__title { font-size: var(--text-md); }
+.route__sum { font-size: var(--text-sm); color: var(--avail-available-fg); font-weight: 600; }
+.route__sum--warn { color: var(--danger-fg); }
+.route__svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+.route__line { stroke: var(--border-strong); stroke-width: 3; stroke-linecap: round; }
+.route__compass { font-size: 11px; font-weight: 700; fill: var(--text-secondary); }
+.route__station { fill: var(--bg-surface); stroke: var(--border-strong); stroke-width: 2; }
+.route__station--on { fill: var(--ri-ink); stroke: var(--ri-orange); stroke-width: 3; }
+.route__name { font-size: 12px; fill: var(--text-secondary); }
+.route__name--on { fill: var(--text-primary); font-weight: 700; }
+.route__stop { fill: var(--ri-orange); stroke: var(--bg-surface); stroke-width: 2; }
+.route__stop-num { font-size: 12px; font-weight: 800; fill: var(--ri-ink); pointer-events: none; }
+.route a:focus-visible .route__stop { stroke: var(--focus); stroke-width: 3; }
+
+.route__leg { fill: none; stroke-width: 3; stroke-linecap: round; }
+.route__leg--ok { stroke: var(--avail-available-fg); }
+.route__leg--tight, .route__leg--overlap { stroke: var(--danger-fg); stroke-dasharray: 6 5; }
+.route__leg--unknown { stroke: var(--border-strong); stroke-dasharray: 2 5; }
+.route__leg-label { font-size: 12px; font-weight: 700; paint-order: stroke; stroke: var(--bg-surface); stroke-width: 4px; }
+.route__leg-label--ok { fill: var(--avail-available-fg); }
+.route__leg-label--tight, .route__leg-label--overlap { fill: var(--danger-fg); }
+.route__leg-label--unknown { fill: var(--text-secondary); }
+
+.route__legs { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+.route__item { display: grid; grid-template-columns: 52px 1fr auto; gap: var(--space-2); align-items: baseline; font-size: var(--text-sm); }
+.route__item-n { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-secondary); }
+.route__item--tight .route__verdict, .route__item--overlap .route__verdict { color: var(--danger-fg); font-weight: 700; }
+.route__item--ok .route__verdict { color: var(--avail-available-fg); }
+.route__maps { font-weight: 600; color: var(--accent); white-space: nowrap; }
+@media (max-width: 560px) { .route__item { grid-template-columns: 40px 1fr; } .route__maps { grid-column: 2; } }
+
+.plan-item:target, .plan-item:focus { outline: 2px solid var(--ri-orange); outline-offset: 2px; }
+
+.route--empty { grid-template-columns: auto 1fr; align-items: center; gap: var(--space-4); }
+.route__empty-art { position: relative; display: flex; gap: 10px; padding: var(--space-3) var(--space-2); }
+.route__empty-art::before { content: ""; position: absolute; left: var(--space-2); right: var(--space-2); top: 50%;
+  border-top: 2px dashed var(--border-strong); }
+.route__empty-dot { position: relative; width: 10px; height: 10px; border-radius: 50%; background: var(--bg-surface); border: 2px solid var(--border-strong); }
+.route__empty-dot:nth-child(2) { border-color: var(--ri-orange); }
+.route__empty-text { margin: var(--space-1) 0 0; font-size: var(--text-sm); color: var(--text-secondary); }
+@media (max-width: 560px) { .route--empty { grid-template-columns: 1fr; } }
+
+/* ==== Breaks, lunch, Expo ideas ========================================= */
+.ideas { list-style: none; margin: var(--space-3) 0 0; padding: 0; display: grid; gap: var(--space-2); }
+.idea { display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-3); align-items: center;
+  padding: var(--space-3); background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.idea__icon { font-size: 22px; line-height: 1; }
+.idea__title { font-size: var(--text-sm); }
+.idea__detail { font-size: var(--text-xs); color: var(--text-secondary); }
+.idea--expo { border-left: 4px solid var(--ri-orange); }
+.idea--lunch { border-left: 4px solid var(--ri-magenta); }
+.idea--break { border-left: 4px solid var(--ri-violet); }
+@media (max-width: 560px) { .idea { grid-template-columns: auto 1fr; } .idea > .btn { grid-column: 2; justify-self: start; } }
+
+.plan-item--personal::before { background: var(--ri-magenta); }
+.plan-item--personal .plan-tag { color: var(--ri-magenta); }
+.plan-fatigue { padding: var(--space-2) var(--space-3); font-size: var(--text-sm); font-weight: 600;
+  color: var(--avail-limited-fg); background: var(--avail-limited-bg); border-radius: var(--radius-md); }

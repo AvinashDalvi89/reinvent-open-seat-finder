@@ -22,17 +22,45 @@ export function el(tag, props = {}, ...children) {
   return node;
 }
 
+/**
+ * Two-step destructive button: first click asks, second click acts.
+ * onConfirm returns a promise; the button shows progress and errors inline.
+ */
+export function removeButton(label, confirmLabel, onConfirm) {
+  const wrap = el('span', { class: 'remove' });
+  const idle = () => wrap.replaceChildren(el('button', {
+    class: 'btn btn--ghost btn--sm', type: 'button', onclick: ask, text: label,
+  }));
+  function ask() {
+    const yes = el('button', {
+      class: 'btn btn--danger btn--sm', type: 'button', text: confirmLabel,
+      onclick: async () => {
+        yes.disabled = true; no.disabled = true; yes.textContent = 'Working…';
+        try { await onConfirm(); } catch (err) {
+          wrap.replaceChildren(el('span', { class: 'plan-warn', role: 'alert', text: err.message }));
+          setTimeout(idle, 4000);
+        }
+      },
+    });
+    const no = el('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: idle, text: 'Keep' });
+    wrap.replaceChildren(yes, no);
+    yes.focus();
+  }
+  idle();
+  return wrap;
+}
+
 export function badge(key) {
   const info = bandInfo(key);
   return el('span', { class: `badge badge--${key}` }, el('span', { 'aria-hidden': 'true', text: info.icon }), info.label);
 }
 
-export function sessionItem(s, { selected, mine, fav, blocks, onToggle, disabled }) {
+export function sessionItem(s, { selected, mine, fav, blocks, onToggle, disabled, onRemove }) {
   const iv = interval(s);
   const clash = mine ? [] : clashes(s, blocks);
   const id = `pick-${s.sessionId}`;
   const titleId = `title-${s.sessionId}`;
-  const canPick = !mine && bandInfo(band(s)).open;
+  const canPick = !mine && bandInfo(band(s)).attend; // walk-in sessions can still be favorited
 
   return el('li', { class: `session${selected ? ' session--selected' : ''}${mine ? ' session--mine' : ''}` },
     el('div', { class: 'session__pick' },
@@ -55,6 +83,7 @@ export function sessionItem(s, { selected, mine, fav, blocks, onToggle, disabled
         s.level ? el('span', { text: s.level }) : null),
       s.speakers?.length ? el('div', { class: 'session__speakers', text: s.speakers.map((p) => p.name).join(', ') }) : null,
       clash.length ? el('div', { class: 'session__clash', text: `Clashes with ${clash.map((b) => b.label).join(', ')}` }) : null,
+      mine && onRemove ? removeButton('Cancel reservation', 'Yes, give seat back', () => onRemove('reserved', s.sessionId)) : null,
       el('div', { class: 'session__links' },
         s.abstract ? el('details', { class: 'session__abstract' }, el('summary', { text: 'Abstract' }), el('p', { text: s.abstract })) : null,
         el('a', {

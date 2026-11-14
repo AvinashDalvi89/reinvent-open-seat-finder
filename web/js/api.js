@@ -71,6 +71,17 @@ export async function loadAllSessions(onProgress) {
   return all;
 }
 
+/** Optional personal calendar served from git-ignored data/calendar.json. Empty when absent. */
+export async function loadCalendar() {
+  try {
+    const res = await fetch('/local/calendar.json', { headers: { Accept: 'application/json' } });
+    if (!res.ok) return [];
+    return (await res.json()).events || [];
+  } catch {
+    return [];
+  }
+}
+
 export async function getSchedule() {
   return (await request('GET', `/events/${EVENT_ID}/schedule`)).schedule;
 }
@@ -78,6 +89,24 @@ export async function getSchedule() {
 /** Reserve up to 10 sessions. Returns BulkResult {successful, failed}. Not safe to blindly retry. */
 export async function reserve(sessionIds) {
   return (await request('POST', `/events/${EVENT_ID}/reservations`, { sessionIds }, { retries: 0 })).result;
+}
+
+/** Give a reserved seat back. 204 on success. */
+export async function cancelReservation(sessionId) {
+  await request('DELETE', `/events/${EVENT_ID}/reservations/${encodeURIComponent(sessionId)}`, null, { retries: 0 });
+}
+
+export async function unfavorite(sessionId) {
+  await request('DELETE', `/events/${EVENT_ID}/favorites/${encodeURIComponent(sessionId)}`, null, { retries: 0 });
+}
+
+/** Block your own time on the re:Invent schedule (shows in the official app too). */
+export async function createPersonalTime(block) {
+  await request('POST', `/events/${EVENT_ID}/personal-time`, block, { retries: 0 });
+}
+
+export async function deletePersonalTime(personalTimeId) {
+  await request('DELETE', `/events/${EVENT_ID}/personal-time/${encodeURIComponent(personalTimeId)}`, null, { retries: 0 });
 }
 
 export async function favorite(sessionIds) {

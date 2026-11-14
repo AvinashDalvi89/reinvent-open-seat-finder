@@ -1,14 +1,18 @@
 // Pure data logic: availability bands, time math, filtering. No DOM here.
+import { venueKey, travelMinutes } from './venues.js';
 
+// open: has reservable seats. attend: you can get in (reserve, or just walk in).
 export const AVAILABILITY = [
-  { key: 'available',   label: 'Open',          icon: '●', open: true },
-  { key: 'limited',     label: 'Filling up',    icon: '◐', open: true },
-  { key: 'veryLimited', label: 'Last seats',    icon: '◔', open: true },
-  { key: 'walkUp',      label: 'Walk-up only',  icon: '→', open: false },
-  { key: 'unavailable', label: 'Full',          icon: '○', open: false },
-  { key: 'none',        label: 'No reservations', icon: '–', open: false },
+  { key: 'available',   label: 'Open',          icon: '●', open: true,  attend: true },
+  { key: 'limited',     label: 'Filling up',    icon: '◐', open: true,  attend: true },
+  { key: 'veryLimited', label: 'Last seats',    icon: '◔', open: true,  attend: true },
+  { key: 'none',        label: 'Walk-in (no reservation)', icon: '→', open: false, attend: true },
+  { key: 'walkUp',      label: 'Walk-up only',  icon: '→', open: false, attend: true },
+  { key: 'unavailable', label: 'Full',          icon: '○', open: false, attend: false },
 ];
 export const OPEN_BANDS = AVAILABILITY.filter((a) => a.open).map((a) => a.key);
+export const DEFAULT_BANDS = AVAILABILITY.filter((a) => a.attend).map((a) => a.key);
+export const TALK_TYPES = ['Breakout session', 'Lightning talk', 'Chalk talk', 'Code talk', 'Keynote', 'Mainstage'];
 const RANK = Object.fromEntries(AVAILABILITY.map((a, i) => [a.key, i]));
 
 export function band(session) {
@@ -27,30 +31,48 @@ export function interval(session) {
   return { day: t.date, start, end: start + (Number(t.length) || 60) };
 }
 
-function personalInterval(pt) {
-  const [day, s] = pt.startDateTime.split('T');
-  const [, e] = pt.endDateTime.split('T');
-  const toMin = (hms) => { const [h, m] = hms.split(':').map(Number); return h * 60 + m; };
-  return { day, start: toMin(s), end: toMin(e), label: pt.title, kind: 'personal' };
+const toMin = (hms) => { const [h, m] = hms.split(':').map(Number); return h * 60 + m; };
+
+/** "YYYY-MM-DDTHH:MM[:SS]" wall-clock (event timezone) -> {day, start, end}. */
+export function wallInterval(startIso, endIso) {
+  const [day, s] = startIso.split('T');
+  const [endDay, e] = endIso.split('T');
+  return { day, start: toMin(s), end: endDay === day ? toMin(e) : 24 * 60 };
 }
 
-/** Busy blocks per day from reserved sessions + personal time. */
-export function busyBlocks(schedule, sessionsById) {
+/**
+ * Blocks that make you unavailable: reserved sessions, re:Invent personal time and
+ * busy events from your own calendar (data/calendar.json). Each carries a venue key
+ * so clash checks can include travel time.
+ */
+export function busyBlocks(schedule, sessionsById, calendar = []) {
   const blocks = [];
   for (const id of schedule?.reserved || []) {
     const s = sessionsById.get(id);
     const iv = s && interval(s);
-    if (iv) blocks.push({ ...iv, label: s.abbreviation || s.title, kind: 'session', id });
+    if (iv) blocks.push({ ...iv, label: s.abbreviation || s.title, kind: 'session', id, venue: venueKey(s.venue) });
   }
-  for (const pt of schedule?.personalTime || []) blocks.push(personalInterval(pt));
+  for (const pt of schedule?.personalTime || []) {
+    blocks.push({ ...wallInterval(pt.startDateTime, pt.endDateTime), label: pt.title, kind: 'personal', venue: venueKey(pt.location) });
+  }
+  for (const ev of calendar) {
+    if (ev.busy === false) continue;
+    blocks.push({ ...wallInterval(ev.start, ev.end), label: ev.title, kind: 'calendar', venue: venueKey(ev.location) });
+  }
   return blocks;
 }
 
-/** Blocks overlapping this session (back-to-back is fine). */
+/** Blocks this session overlaps, counting travel time between venues when both are known. */
 export function clashes(session, blocks) {
   const iv = interval(session);
   if (!iv) return [];
-  return blocks.filter((b) => b.day === iv.day && b.id !== session.sessionId && b.start < iv.end && iv.start < b.end);
+  const here = venueKey(session.venue);
+  return blocks.filter((b) => {
+    if (b.day !== iv.day || b.id === session.sessionId) return false;
+    const toHere = travelMinutes(b.venue, here) || 0;
+    const fromHere = travelMinutes(here, b.venue) || 0;
+    return b.start < iv.end + fromHere && iv.start < b.end + toHere;
+  });
 }
 
 export function searchText(s) {
@@ -73,6 +95,7 @@ export function facets(sessions) {
 /** Everything except the day filter, so day tabs can show live counts. */
 export function matchesExceptDay(s, f, ctx) {
   if (!f.bands.includes(band(s))) return false;
+  if (f.talks && !TALK_TYPES.includes(s.type)) return false;
   if (f.type && s.type !== f.type) return false;
   if (f.level && s.level !== f.level) return false;
   if (f.topic && !(s.topics || []).includes(f.topic)) return false;
