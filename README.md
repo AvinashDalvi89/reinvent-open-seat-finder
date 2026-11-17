@@ -98,6 +98,15 @@ Options:
 
 Open the app at `localhost`, not `127.0.0.1`. The sign-in redirect is registered for the exact URL the server uses.
 
+**Install as an app.** Open Seats is a PWA: in Chrome or Edge, use the install icon in the address bar to get
+its own window and dock icon. It still needs `python3 server.py` running. The service worker caches only the
+app's own files, never API responses or anything token-related. The layout works on phone-sized screens too.
+
+**On your phone.** The Events API only allows sign-in from an app on your own machine (there is no hosted
+option), so Open Seats can't be a public website. Everything you reserve or block lands on your re:Invent
+schedule and shows up in the official re:Invent app. The project page at
+[openseats.avinashdalvi.com](https://openseats.avinashdalvi.com) (source in `site/`) explains how to run it.
+
 ## Security notes
 
 - Tokens are held only in the server process's memory. Stopping the server forgets them. **Sign out**
@@ -122,6 +131,8 @@ works at 320px wide and up.
 - Clash detection uses each session's listed start time and length in the event's local time (Las Vegas).
   With **Fits my schedule** on, it also allows for travel time between venues. Those travel times are
   rough estimates, not official figures. Edit them in `web/js/venues.js` if your experience on site differs.
+- Personal time (**Block this time**): the live API refuses an entry whose `location` contains `|` and cuts a
+  `title` short at `&`, neither documented. The app rewrites ` | ` to `, ` and `&` to `and` before sending.
 
 ## License
 

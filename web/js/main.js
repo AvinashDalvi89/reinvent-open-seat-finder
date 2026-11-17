@@ -125,6 +125,11 @@ function setSchedule(schedule) {
 // ---- Controls -----------------------------------------------------------
 function bindControls() {
   let t;
+  $('filters-toggle').addEventListener('click', () => {
+    const open = $('filters-toggle').getAttribute('aria-expanded') !== 'true';
+    $('filters-toggle').setAttribute('aria-expanded', String(open));
+    $('filters-body').classList.toggle('is-open', open);
+  });
   $('q').value = state.filters.q;
   $('q').addEventListener('input', (e) => {
     clearTimeout(t);
@@ -179,8 +184,17 @@ function populateFacets() {
 }
 
 // ---- Render -------------------------------------------------------------
+/** Phone filter toggle shows how many filters are on, so a collapsed panel isn't a surprise. */
+function renderFilterToggle(f) {
+  const n = [f.q, f.fits, f.talks, f.type, f.level, f.topic, f.bands.join() !== DEFAULT_BANDS.join()].filter(Boolean).length;
+  const btn = $('filters-toggle');
+  btn.dataset.active = String(n);
+  btn.textContent = n ? `Filters · ${n} on` : 'Filters';
+}
+
 function render() {
   const f = state.filters;
+  renderFilterToggle(f);
   const ctx = { text: state.text, blocks: state.blocks };
   const reserved = new Set(state.schedule.reserved);
   const favorites = new Set(state.schedule.favorites);
@@ -370,6 +384,11 @@ function showResult(kind, result, errorMessage) {
   $('result-list').replaceChildren(...resultItems(result, state.byId, verb));
   $('result-dialog').showModal();
   $('result-close').focus();
+}
+
+// Installable app: cache the shell. Data never goes through the cache (see sw.js).
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => { /* still works as a normal page */ });
 }
 
 boot().catch((err) => {

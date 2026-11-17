@@ -100,9 +100,17 @@ export async function unfavorite(sessionId) {
   await request('DELETE', `/events/${EVENT_ID}/favorites/${encodeURIComponent(sessionId)}`, null, { retries: 0 });
 }
 
+// Personal time text quirks seen on the live API (not in the docs): a "|" in
+// `location` refuses the whole entry ("could not be applied"), and an "&" in
+// `title` silently cuts the title at that point. Catalog venues use " | ", so
+// rewrite both before sending.
+const cleanText = (s) => s.replace(/\s*\|\s*/g, ', ').replace(/\s*&\s*/g, ' and ').trim();
+
 /** Block your own time on the re:Invent schedule (shows in the official app too). */
 export async function createPersonalTime(block) {
-  await request('POST', `/events/${EVENT_ID}/personal-time`, block, { retries: 0 });
+  const body = { ...block, title: cleanText(block.title), description: cleanText(block.description) };
+  if (block.location) body.location = cleanText(block.location);
+  await request('POST', `/events/${EVENT_ID}/personal-time`, body, { retries: 0 });
 }
 
 export async function deletePersonalTime(personalTimeId) {

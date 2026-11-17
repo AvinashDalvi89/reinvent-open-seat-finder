@@ -1,0 +1,19 @@
+{
+  "name": "Open Seats · re:Invent 2026",
+  "short_name": "Open Seats",
+  "description": "Find re:Invent 2026 sessions you can still get into, plan your week and reserve in one step.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0c0a24",
+  "theme_color": "#0c0a24",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "My week", "url": "/?view=week", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

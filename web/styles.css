@@ -115,10 +115,10 @@ h1, h2, h3 { line-height: 1.25; margin: 0; }
 .notice--error { background: var(--danger-bg); color: var(--danger-fg); }
 
 /* ---- Layout ------------------------------------------------------------- */
-.layout { max-width: 1280px; margin: 0 auto; padding: var(--space-4); display: grid; gap: var(--space-5); grid-template-columns: 1fr; }
-@media (min-width: 900px) { .layout { grid-template-columns: 260px 1fr; } }
+.layout { max-width: 1280px; margin: 0 auto; padding: var(--space-4); display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .layout { grid-template-columns: 260px minmax(0, 1fr); } }
 
-.filters { display: grid; gap: var(--space-4); align-content: start; }
+.filters { display: grid; gap: var(--space-4); align-content: start; min-width: 0; }
 @media (min-width: 900px) { .filters { position: sticky; top: 72px; } }
 .filters__heading { font-size: var(--text-md); }
 .field { display: grid; gap: var(--space-2); margin: 0; padding: 0; border: 0; min-width: 0; }
@@ -129,7 +129,7 @@ h1, h2, h3 { line-height: 1.25; margin: 0; }
 .check input, .switch input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
 .check__count { margin-left: auto; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 
-.content { min-width: 0; display: grid; gap: var(--space-4); align-content: start; }
+.content { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); align-content: start; }
 .content:focus { outline: none; }
 
 /* ---- Day tabs ----------------------------------------------------------- */
@@ -415,3 +415,40 @@ h1, h2, h3 { line-height: 1.25; margin: 0; }
 .plan-item--personal .plan-tag { color: var(--ri-magenta); }
 .plan-fatigue { padding: var(--space-2) var(--space-3); font-size: var(--text-sm); font-weight: 600;
   color: var(--avail-limited-fg); background: var(--avail-limited-bg); border-radius: var(--radius-md); }
+
+/* ==== Phone + installed app (PWA) ========================================= */
+.filters__body { display: grid; gap: var(--space-4); align-content: start; }
+.filters__toggle { display: none; }
+/* Installed on iPhone the status bar is translucent: keep content below it and
+   the action bar above the home indicator. */
+.topbar__inner { padding-top: max(var(--space-3), env(safe-area-inset-top)); }
+.action-bar__inner { padding-bottom: max(var(--space-3), env(safe-area-inset-bottom)); }
+
+@media (max-width: 899px) {
+  .filters__heading { display: none; }
+  .filters__toggle { display: inline-flex; }
+  .filters__toggle::after { content: "▾"; margin-left: auto; }
+  .filters__toggle[aria-expanded="true"]::after { content: "▴"; }
+  .filters__toggle[data-active]:not([data-active="0"]) { border-color: var(--accent); }
+  .filters__body:not(.is-open) { display: none; }
+  .topbar__catalog { display: none; }  /* every session already links to its catalog page */
+}
+
+@media (max-width: 560px) {
+  .layout { padding: var(--space-3); gap: var(--space-3); }
+  .topbar__inner { gap: var(--space-2); }
+  .sync-status { flex-basis: 100%; order: 3; }
+  .action-bar__inner .btn { flex: 1 1 auto; }
+  .action-bar__count { flex-basis: 100%; }
+  .views { width: 100%; }
+  .view-btn { flex: 1; }
+  .session { padding: var(--space-3); }
+}
+
+/* Fingers, not cursors: 44px touch targets. */
+@media (pointer: coarse) {
+  .btn, .day-tab { min-height: 44px; }
+  .check, .switch { min-height: 44px; }
+  .view-btn { min-height: 40px; }
+  .input { min-height: 44px; font-size: 16px; } /* 16px stops iOS zooming into inputs */
+}

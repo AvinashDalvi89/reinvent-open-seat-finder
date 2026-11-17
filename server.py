@@ -23,6 +23,8 @@ import urllib.request
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+mimetypes.add_type("application/manifest+json", ".webmanifest")
+
 PORT = int(os.environ.get("OPEN_SEATS_PORT", "8484"))
 if PORT not in range(8484, 8490):
     sys.exit("OPEN_SEATS_PORT must be 8484-8489 (the Events API's reserved loopback ports).")

@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Open Seats · re:Invent 2026</title>
+  <meta name="description" content="Find re:Invent 2026 sessions you can still get into, plan your day across the Strip and reserve in one step. Free and open source.">
+  <meta name="theme-color" content="#0c0a24">
+  <meta property="og:title" content="Open Seats · re:Invent 2026">
+  <meta property="og:description" content="Only sessions with open seats. A day planner that knows how far Caesars Forum is from MGM. Reserve up to 10 in one step.">
+  <meta property="og:image" content="https://openseats.avinashdalvi.com/img/desktop.jpg">
+  <meta property="og:url" content="https://openseats.avinashdalvi.com/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230c0a24'/%3E%3Crect x='5' y='11' width='6' height='13' rx='2' fill='%234a4385'/%3E%3Crect x='13' y='11' width='6' height='13' rx='2' fill='%234a4385'/%3E%3Crect x='21' y='11' width='6' height='13' rx='2' fill='%23ff9900'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <style>
+    :root {
+      --ink: #0c0a24; --ink-2: #1a1640; --violet: #5b3fd6; --magenta: #c13ccf; --orange: #ff9900;
+      --bg: #f6f5fb; --surface: #ffffff; --text: #17142e; --muted: #5d5878; --line: #e2dfef;
+      --link: #5b3fd6; --code-bg: #0c0a24; --code-fg: #ece9ff;
+      --radius: 14px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0c0a24; --surface: #16123a; --text: #ece9ff; --muted: #a9a3cf; --line: #2d2763;
+        --link: #b8a8ff; --code-bg: #05040f;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0c0a24; --surface: #16123a; --text: #ece9ff; --muted: #a9a3cf; --line: #2d2763;
+      --link: #b8a8ff; --code-bg: #05040f;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--text);
+      font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    a { color: var(--link); }
+    img { max-width: 100%; height: auto; display: block; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+
+    /* Hero */
+    .hero { background: var(--ink); color: #ece9ff; position: relative; overflow: hidden; }
+    .hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px;
+      background: linear-gradient(90deg, var(--violet), var(--magenta) 55%, var(--orange)); }
+    .hero .wrap { padding-top: 28px; padding-bottom: 56px; }
+    .brand { display: flex; align-items: center; gap: 12px; color: #ece9ff; text-decoration: none; }
+    .seats { display: inline-flex; gap: 3px; align-items: flex-end; }
+    .seats i { width: 10px; height: 16px; border-radius: 3px 3px 1px 1px; background: #4a4385; }
+    .seats i:last-child { background: var(--orange); }
+    .word { font-weight: 800; font-size: 24px; letter-spacing: -0.03em; }
+    .word b { color: var(--orange); }
+    .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; margin-top: 40px; align-items: center; }
+    @media (min-width: 860px) { .hero-grid { grid-template-columns: 1.15fr .85fr; } }
+    .kicker { margin: 0 0 12px; font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #a9a3cf; }
+    h1 { margin: 0; font-size: clamp(34px, 7vw, 56px); line-height: 1.05; letter-spacing: -0.03em; }
+    h1 em { font-style: normal; color: var(--orange); }
+    .lead { margin: 18px 0 0; font-size: 19px; color: #cfc9f2; max-width: 34em; }
+    .ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px;
+      border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 16px; }
+    .btn--primary { background: var(--orange); color: var(--ink); }
+    .btn--ghost { color: #ece9ff; border: 1px solid #4a4385; }
+    .btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+    .phone { justify-self: center; width: min(300px, 78vw); border-radius: 34px; padding: 10px; background: #2a2552;
+      box-shadow: 0 30px 60px rgb(0 0 0 / .45); }
+    .phone img { border-radius: 26px; }
+
+    /* Sections */
+    section { padding: 64px 0 0; }
+    h2 { font-size: clamp(26px, 4.5vw, 34px); letter-spacing: -0.02em; line-height: 1.15; margin: 0 0 12px; }
+    .sub { margin: 0 0 28px; color: var(--muted); max-width: 40em; }
+    .story { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+    .story p { margin: 0 0 12px; } .story p:last-child { margin: 0; }
+    .features { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+    .feature { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+    .feature .ico { font-size: 26px; line-height: 1; }
+    .feature h3 { margin: 12px 0 6px; font-size: 18px; }
+    .feature p { margin: 0; color: var(--muted); font-size: 16px; }
+    .new { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 99px; font-size: 12px; font-weight: 700;
+      vertical-align: 2px; background: var(--orange); color: var(--ink); }
+    .shot { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); box-shadow: 0 12px 40px rgb(12 10 36 / .12); }
+    figcaption { margin-top: 10px; font-size: 14px; color: var(--muted); }
+
+    .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .steps li { counter-increment: s; position: relative; padding-left: 48px; min-width: 0; }
+    .steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 32px; height: 32px; border-radius: 50%;
+      display: grid; place-items: center; font-weight: 800; background: var(--ink); color: var(--orange); }
+    pre { margin: 10px 0 0; padding: 16px; border-radius: 10px; background: var(--code-bg); color: var(--code-fg);
+      overflow-x: auto; font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; }
+    .note { margin-top: 20px; padding: 18px 20px; border-radius: var(--radius); background: var(--surface);
+      border: 1px solid var(--line); border-left: 4px solid var(--orange); }
+    .note p { margin: 0 0 8px; } .note p:last-child { margin: 0; }
+    footer { margin-top: 72px; padding: 28px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 15px; }
+    footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <a class="brand" href="/" aria-label="Open Seats home">
+        <span class="seats" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="word">open<b>:</b>seats</span>
+      </a>
+      <div class="hero-grid">
+        <div>
+          <p class="kicker">re:Invent 2026 · Las Vegas</p>
+          <h1>Find sessions you can <em>still</em> get into.</h1>
+          <p class="lead">
+            The catalog lists every session, full or not. Open Seats shows only the ones with open seats,
+            plans your day across the Strip, and reserves your picks in one step.
+          </p>
+          <div class="ctas">
+            <a class="btn btn--primary" href="#run">Run it in 2 minutes</a>
+            <a class="btn btn--ghost" href="https://github.com/AvinashDalvi89/reinvent-open-seat-finder">View on GitHub ↗</a>
+          </div>
+        </div>
+        <img class="phone" src="/img/phone.jpg" width="390" height="844"
+          alt="Open Seats on a phone: filters, a Sessions / My week switch, day tabs and a list of sessions with seat availability">
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap" aria-labelledby="why">
+      <h2 id="why">Why I built it</h2>
+      <div class="story">
+        <p>My re:Invent looks like this: meetings at Caesars Forum, a talk at the Venetian, lunch somewhere in
+          between, and then a session at MGM that I'd never make in time.</p>
+        <p>Every “Full” badge was another click wasted. So I built a tool that only shows sessions I can still get into,
+          knows how long it takes to walk (or shuttle) between venues, and fills my free gaps for me.</p>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="features">
+      <h2 id="features">What it does</h2>
+      <p class="sub">Built on the official re:Invent Events API. Your sign-in and data stay on your own machine.</p>
+      <div class="features">
+        <article class="feature">
+          <div class="ico" aria-hidden="true">🎟️</div>
+          <h3>Open seats only</h3>
+          <p>Filter by Open, Filling up and Last seats, with live counts. Full sessions are one checkbox away if you want them.</p>
+        </article>
+        <article class="feature">
+          <div class="ico" aria-hidden="true">🗓️</div>
+          <h3>My week <span class="new">New</span></h3>
+          <p>Your day as an agenda in Las Vegas time: reservations, favorites and your own meetings, side by side.</p>
+        </article>
+        <article class="feature">
+          <div class="ico" aria-hidden="true">🚶</div>
+          <h3>Travel-time checks <span class="new">New</span></h3>
+          <p>Knows the Strip from Wynn to Mandalay. Warns you when a hop is too tight, and hides sessions you can't reach in time.</p>
+        </article>
+        <article class="feature">
+          <div class="ico" aria-hidden="true">🗺️</div>
+          <h3>Day route <span class="new">New</span></h3>
+          <p>Your stops numbered along the Strip, each hop colored by whether you'll make it, with Google Maps directions.</p>
+        </article>
+        <article class="feature">
+          <div class="ico" aria-hidden="true">💡</div>
+          <h3>Fills your gaps <span class="new">New</span></h3>
+          <p>Sessions that fit each free slot, plus time for lunch, the Expo (swag!) and a break when you've been running for 3 hours.</p>
+        </article>
+        <article class="feature">
+          <div class="ico" aria-hidden="true">⚡</div>
+          <h3>Reserve 10 at once</h3>
+          <p>Reserve or favorite in one step, with an honest result for each session: reserved, full, or clashes with something.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="look">
+      <h2 id="look">On the laptop</h2>
+      <figure style="margin:0">
+        <img class="shot" src="/img/desktop.jpg" width="1600" height="804" loading="lazy"
+          alt="Open Seats on desktop: availability filters on the left, day tabs, and sessions with open seats">
+        <figcaption>Filters on the left, sessions with open seats on the right. Everything lives in the URL, so you can bookmark a view.</figcaption>
+      </figure>
+    </section>
+
+    <section class="wrap" id="run" aria-labelledby="run-h">
+      <h2 id="run-h">Run it yourself</h2>
+      <p class="sub">You need Python 3 and an AWS Builder ID registered for re:Invent 2026. No installs, no dependencies.</p>
+      <ol class="steps">
+        <li>Get the code and start it:
+          <pre><code>git clone https://github.com/AvinashDalvi89/reinvent-open-seat-finder.git
+cd reinvent-open-seat-finder
+python3 server.py</code></pre>
+        </li>
+        <li>Your browser opens <code>http://localhost:8484</code>. Click <strong>Sign in with AWS Builder ID</strong>.</li>
+        <li>Optional: install it as an app. In Chrome or Edge, use the install icon in the address bar.</li>
+      </ol>
+      <div class="note">
+        <p><strong>Why not just a website?</strong> The re:Invent Events API only allows sign-in from an app running on
+          your own machine. That's by design: your tokens never leave your laptop.</p>
+        <p><strong>On the go?</strong> Everything you reserve or block in Open Seats lands on your re:Invent schedule,
+          so it shows up in the official re:Invent app on your phone.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>Built by <a href="https://avinashdalvi.com">Avinash Dalvi</a> for re:Invent 2026. Not affiliated with AWS.</span>
+      <a href="https://github.com/AvinashDalvi89/reinvent-open-seat-finder">Source on GitHub</a>
+    </div>
+  </footer>
+</body>
+</html>
