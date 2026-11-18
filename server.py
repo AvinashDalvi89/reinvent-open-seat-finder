@@ -10,6 +10,7 @@ Standard library only. Run: python3 server.py
 
 import base64
 import hashlib
+import hmac
 import json
 import mimetypes
 import os
@@ -22,6 +23,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import webbrowser
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 mimetypes.add_type("application/manifest+json", ".webmanifest")
@@ -31,6 +33,9 @@ if PORT not in range(8484, 8490):
     sys.exit("OPEN_SEATS_PORT must be 8484-8489 (the Events API's reserved loopback ports).")
 
 ORIGIN = "http://localhost:%d" % PORT
+# Per-run secret: only the browser we open (via ?k=) gets the session cookie.
+LOCAL_SECRET = secrets.token_urlsafe(32)
+COOKIE_NAME = "open_seats_session"
 REDIRECT_URI = ORIGIN + "/callback"
 CLIENT_ID = "7vmom55m1qstvq8i71ph127bfq"  # public, shared client (no secret; PKCE)
 AUTHORIZE_URL = "https://oauth.awsevents.com/oauth2/authorize"
@@ -153,6 +158,11 @@ class Handler(BaseHTTPRequestHandler):
         # Blocks DNS-rebinding: only answer requests addressed to this machine.
         return self.headers.get("Host", "") in ALLOWED_HOSTS
 
+    def _authed(self):
+        jar = SimpleCookie(self.headers.get("Cookie", ""))
+        morsel = jar.get(COOKIE_NAME)
+        return bool(morsel) and hmac.compare_digest(morsel.value.encode(), LOCAL_SECRET.encode())
+
     def _send(self, status, body=b"", ctype="application/json", extra=None):
         self.send_response(status)
         self.send_header("Content-Type", ctype)
@@ -180,10 +190,20 @@ class Handler(BaseHTTPRequestHandler):
         if not self._host_ok():
             return self._send(421, b"Misdirected request", "text/plain")
         url = urllib.parse.urlsplit(self.path)
-        if url.path == "/auth/login":
-            return self._login()
         if url.path == "/callback":
             return self._callback(urllib.parse.parse_qs(url.query))
+        key = urllib.parse.parse_qs(url.query).get("k", [""])[0]
+        if url.path == "/" and key and hmac.compare_digest(key.encode(), LOCAL_SECRET.encode()):
+            self.send_response(302)
+            self.send_header("Set-Cookie", "%s=%s; Path=/; HttpOnly; SameSite=Lax" % (COOKIE_NAME, LOCAL_SECRET))
+            self.send_header("Location", "/")
+            self.send_header("Content-Length", "0")
+            return self.end_headers()
+        if url.path == "/auth/login" or url.path == "/auth/status" or url.path == "/local/calendar.json" or url.path.startswith("/api/"):
+            if not self._authed():
+                return self._json(401, {"message": "Unauthorized: open the URL printed by the server."})
+        if url.path == "/auth/login":
+            return self._login()
         if url.path == "/local/calendar.json":
             if not os.path.isfile(CALENDAR_FILE):
                 return self._json(404, {"message": "No data/calendar.json"})
@@ -211,6 +231,8 @@ class Handler(BaseHTTPRequestHandler):
     def _mutating(self, method):
         if not self._host_ok():
             return self._send(421, b"Misdirected request", "text/plain")
+        if not self._authed():
+            return self._json(401, {"message": "Unauthorized: open the URL printed by the server."})
         if self.headers.get(CSRF_HEADER) != "1":
             return self._json(403, {"message": "Missing %s header." % CSRF_HEADER})
         url = urllib.parse.urlsplit(self.path)
@@ -299,9 +321,12 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     httpd = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    start_url = "%s/?k=%s" % (ORIGIN, LOCAL_SECRET)
     print("Open Seats running at %s  (Ctrl+C to stop)" % ORIGIN)
     if "--no-browser" not in sys.argv:
-        threading.Timer(0.5, lambda: webbrowser.open(ORIGIN)).start()
+        threading.Timer(0.5, lambda: webbrowser.open(start_url)).start()
+    else:
+        print("Open this URL in your browser to start a session: %s" % start_url)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

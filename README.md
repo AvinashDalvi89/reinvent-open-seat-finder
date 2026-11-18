@@ -90,9 +90,13 @@ python3 server.py
 The app opens at **http://localhost:8484**. Click **Sign in with AWS Builder ID**, finish sign-in, and
 the catalog loads.
 
+The server generates a random secret on each run and opens your browser at `/?k=<secret>`, which sets an
+HttpOnly session cookie. `/api`, `/auth` and `/local` calls without that cookie get a 401, so other local
+processes or users can't use your signed-in session.
+
 Options:
 
-- `python3 server.py --no-browser` doesn't open a browser tab.
+- `python3 server.py --no-browser` doesn't open a browser tab; it prints the secret URL to open yourself.
 - `OPEN_SEATS_PORT=8485 python3 server.py` uses another port. It must be one of the Events API's reserved
   loopback ports, 8484 to 8489.
 
@@ -106,6 +110,15 @@ app's own files, never API responses or anything token-related. The layout works
 option), so Open Seats can't be a public website. Everything you reserve or block lands on your re:Invent
 schedule and shows up in the official re:Invent app. The project page at
 [openseats.avinashdalvi.com](https://openseats.avinashdalvi.com) (source in `site/`) explains how to run it.
+
+## Tests
+
+```
+python3 -m unittest
+```
+
+Runs `test_local_auth.py` (local-server cookie auth) and `test_proxy_path.py` (proxy path allow-list). Both
+are offline and never contact AWS.
 
 ## Security notes
 
