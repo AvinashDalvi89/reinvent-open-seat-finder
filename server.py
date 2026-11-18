@@ -191,6 +191,10 @@ class Handler(BaseHTTPRequestHandler):
         if url.path == "/auth/status":
             return self._json(200, {"signedIn": tokens.signed_in})
         if url.path.startswith("/api/"):
+            if not self._host_ok():
+                return self._send(421, b"Misdirected request", "text/plain")
+            if self.headers.get(CSRF_HEADER) != "1":
+                return self._json(403, {"message": "Missing %s header." % CSRF_HEADER})
             return self._proxy("GET", url)
         return self._static(url.path)
 
