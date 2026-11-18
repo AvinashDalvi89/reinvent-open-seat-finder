@@ -110,7 +110,9 @@ schedule and shows up in the official re:Invent app. The project page at
 ## Security notes
 
 - Tokens are held only in the server process's memory. Stopping the server forgets them. **Sign out**
-  revokes the refresh token.
+  revokes the refresh token and clears all local token and sign-in state. It does not end your AWS Builder ID
+  session in the browser (no logout endpoint is documented); to fully log out, sign out at
+  [profile.aws.amazon.com](https://profile.aws.amazon.com).
 - The server binds to `127.0.0.1` and rejects requests whose `Host` isn't `localhost`/`127.0.0.1`
   (DNS-rebinding protection).
 - Every state-changing request needs a custom `X-Open-Seats` header. Another website can't send it

@@ -66,6 +66,11 @@ async function boot() {
     params.delete('auth');
     history.replaceState(null, '', `${location.pathname}${params.toString() ? `?${params}` : ''}`);
   }
+  if (params.get('auth') === 'signedout') {
+    $('signout-note').hidden = false;
+    params.delete('auth');
+    history.replaceState(null, '', `${location.pathname}${params.toString() ? `?${params}` : ''}`);
+  }
   if (!(await api.authStatus())) return showSignIn();
   $('signin-view').hidden = true;
   $('app-view').hidden = false;
@@ -151,7 +156,7 @@ function bindControls() {
   $('reset-btn').addEventListener('click', resetFilters);
   $('more-btn').addEventListener('click', () => { state.shown += PAGE; render(); });
   $('refresh-btn').addEventListener('click', load);
-  $('signout-btn').addEventListener('click', async () => { await api.signOut(); location.replace('/'); });
+  $('signout-btn').addEventListener('click', async () => { await api.signOut(); location.replace('/?auth=signedout'); });
   $('clear-sel-btn').addEventListener('click', () => { state.selected.clear(); render(); });
   $('reserve-btn').addEventListener('click', () => submit('reserve'));
   $('fav-btn').addEventListener('click', () => submit('favorite'));
