@@ -13,6 +13,7 @@ import hashlib
 import json
 import mimetypes
 import os
+import re
 import secrets
 import sys
 import threading
@@ -96,6 +97,21 @@ def refresh():
     except (urllib.error.URLError, ValueError, KeyError):
         tokens.clear()
         return False
+
+
+PROXY_ALLOWED = re.compile(
+    r"^/events/[\w-]+/(?:sessions|schedule|reservations|favorites|personal-time)(?:/[\w%-]+)?$"
+)
+
+
+def proxy_path_allowed(path):
+    """Allow-list of Events API endpoints; rejects traversal and odd encodings."""
+    if not PROXY_ALLOWED.match(path):
+        return False
+    decoded = urllib.parse.unquote(path)
+    # Reject anything that decodes to separators, dots or control chars.
+    return not any(c in "\\.%\x7f" or c < " " for c in decoded) and "//" not in decoded \
+        and decoded.count("/") == path.count("/")
 
 
 def call_api(method, path, body):
@@ -247,7 +263,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _proxy(self, method, url):
         path = url.path[len("/api"):]
-        if not path.startswith("/events"):
+        if not proxy_path_allowed(path):
             return self._json(404, {"message": "Not found"})
         if url.query:
             path += "?" + url.query
