@@ -10,9 +10,11 @@ Standard library only. Run: python3 server.py
 
 import base64
 import hashlib
+import hmac
 import json
 import mimetypes
 import os
+import re
 import secrets
 import sys
 import threading
@@ -21,6 +23,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import webbrowser
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 mimetypes.add_type("application/manifest+json", ".webmanifest")
@@ -30,11 +33,16 @@ if PORT not in range(8484, 8490):
     sys.exit("OPEN_SEATS_PORT must be 8484-8489 (the Events API's reserved loopback ports).")
 
 ORIGIN = "http://localhost:%d" % PORT
+# Per-run secret: only the browser we open (via ?k=) gets the session cookie.
+LOCAL_SECRET = secrets.token_urlsafe(32)
+COOKIE_NAME = "open_seats_session"
 REDIRECT_URI = ORIGIN + "/callback"
 CLIENT_ID = "7vmom55m1qstvq8i71ph127bfq"  # public, shared client (no secret; PKCE)
 AUTHORIZE_URL = "https://oauth.awsevents.com/oauth2/authorize"
 TOKEN_URL = "https://oauth.awsevents.com/oauth2/token"
 REVOKE_URL = "https://oauth.awsevents.com/oauth2/revoke"
+IDP_LOGOUT_URL = "https://idp.awsevents.com/oidc/logout"
+HOSTED_LOGOUT_URL = "https://oauth.awsevents.com/logout"
 API_BASE = "https://api.awsevents.com/v1"
 SCOPE = "openid email events/access"
 WEB_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
@@ -42,6 +50,12 @@ WEB_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
 CALENDAR_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "calendar.json")
 ALLOWED_HOSTS = {"localhost:%d" % PORT, "127.0.0.1:%d" % PORT}
 CSRF_HEADER = "X-Open-Seats"  # custom header: cross-site pages can't send it without a preflight we never answer
+
+
+def builder_id_logout_url(origin):
+    """One navigation that ends both the AWS brokering and Builder ID browser sessions."""
+    inner = "%s?client_id=%s&logout_uri=%s/logout" % (HOSTED_LOGOUT_URL, CLIENT_ID, origin)  # as in the AWS docs
+    return IDP_LOGOUT_URL + "?redirect_uri=" + urllib.parse.quote(inner, safe="")
 
 
 class TokenStore:
@@ -63,6 +77,7 @@ class TokenStore:
         with self._lock:
             self.access_token = self.refresh_token = None
             self.expires_at = 0.0
+            self.pending = {}
 
     @property
     def signed_in(self):
@@ -96,6 +111,21 @@ def refresh():
     except (urllib.error.URLError, ValueError, KeyError):
         tokens.clear()
         return False
+
+
+PROXY_ALLOWED = re.compile(
+    r"^/events/[\w-]+/(?:sessions|schedule|reservations|favorites|personal-time)(?:/[\w%-]+)?$"
+)
+
+
+def proxy_path_allowed(path):
+    """Allow-list of Events API endpoints; rejects traversal and odd encodings."""
+    if not PROXY_ALLOWED.match(path):
+        return False
+    decoded = urllib.parse.unquote(path)
+    # Reject anything that decodes to separators, dots or control chars.
+    return not any(c in "\\.%\x7f" or c < " " for c in decoded) and "//" not in decoded \
+        and decoded.count("/") == path.count("/")
 
 
 def call_api(method, path, body):
@@ -136,6 +166,11 @@ class Handler(BaseHTTPRequestHandler):
         # Blocks DNS-rebinding: only answer requests addressed to this machine.
         return self.headers.get("Host", "") in ALLOWED_HOSTS
 
+    def _authed(self):
+        jar = SimpleCookie(self.headers.get("Cookie", ""))
+        morsel = jar.get(COOKIE_NAME)
+        return bool(morsel) and hmac.compare_digest(morsel.value.encode(), LOCAL_SECRET.encode())
+
     def _send(self, status, body=b"", ctype="application/json", extra=None):
         self.send_response(status)
         self.send_header("Content-Type", ctype)
@@ -163,18 +198,39 @@ class Handler(BaseHTTPRequestHandler):
         if not self._host_ok():
             return self._send(421, b"Misdirected request", "text/plain")
         url = urllib.parse.urlsplit(self.path)
-        if url.path == "/auth/login":
-            return self._login()
         if url.path == "/callback":
             return self._callback(urllib.parse.parse_qs(url.query))
+        if url.path == "/logout":
+            # Landing point after the AWS logout chain. Exposes nothing: just bounces to the open static page.
+            return self._redirect("/?auth=signedout")
+        key = urllib.parse.parse_qs(url.query).get("k", [""])[0]
+        if url.path == "/" and key and hmac.compare_digest(key.encode(), LOCAL_SECRET.encode()):
+            self.send_response(302)
+            self.send_header("Set-Cookie", "%s=%s; Path=/; HttpOnly; SameSite=Lax" % (COOKIE_NAME, LOCAL_SECRET))
+            self.send_header("Location", "/")
+            self.send_header("Content-Length", "0")
+            return self.end_headers()
+        if url.path in ("/auth/login", "/auth/status", "/auth/logout-url") or url.path == "/local/calendar.json" or url.path.startswith("/api/"):
+            if not self._authed():
+                return self._json(401, {"message": "Unauthorized: open the URL printed by the server."})
+        if url.path == "/auth/login":
+            return self._login()
         if url.path == "/local/calendar.json":
             if not os.path.isfile(CALENDAR_FILE):
                 return self._json(404, {"message": "No data/calendar.json"})
             with open(CALENDAR_FILE, "rb") as fh:
                 return self._send(200, fh.read())
+        if url.path == "/auth/logout-url":
+            # Same host form/port the page is on; logout_uri must match a registered one exactly.
+            origin = "http://" + self.headers.get("Host", "")
+            return self._json(200, {"url": builder_id_logout_url(origin)})
         if url.path == "/auth/status":
             return self._json(200, {"signedIn": tokens.signed_in})
         if url.path.startswith("/api/"):
+            if not self._host_ok():
+                return self._send(421, b"Misdirected request", "text/plain")
+            if self.headers.get(CSRF_HEADER) != "1":
+                return self._json(403, {"message": "Missing %s header." % CSRF_HEADER})
             return self._proxy("GET", url)
         return self._static(url.path)
 
@@ -190,6 +246,8 @@ class Handler(BaseHTTPRequestHandler):
     def _mutating(self, method):
         if not self._host_ok():
             return self._send(421, b"Misdirected request", "text/plain")
+        if not self._authed():
+            return self._json(401, {"message": "Unauthorized: open the URL printed by the server."})
         if self.headers.get(CSRF_HEADER) != "1":
             return self._json(403, {"message": "Missing %s header." % CSRF_HEADER})
         url = urllib.parse.urlsplit(self.path)
@@ -237,17 +295,18 @@ class Handler(BaseHTTPRequestHandler):
         self._redirect("/")
 
     def _logout(self):
-        if tokens.refresh_token:
-            try:
+        try:
+            if tokens.refresh_token:
                 post_form(REVOKE_URL, {"client_id": CLIENT_ID, "token": tokens.refresh_token})
-            except urllib.error.URLError:
-                pass
-        tokens.clear()
+        except Exception:
+            pass  # revocation is best-effort; local state is always cleared
+        finally:
+            tokens.clear()
         self._json(200, {"signedIn": False})
 
     def _proxy(self, method, url):
         path = url.path[len("/api"):]
-        if not path.startswith("/events"):
+        if not proxy_path_allowed(path):
             return self._json(404, {"message": "Not found"})
         if url.query:
             path += "?" + url.query
@@ -277,9 +336,12 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     httpd = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    start_url = "%s/?k=%s" % (ORIGIN, LOCAL_SECRET)
     print("Open Seats running at %s  (Ctrl+C to stop)" % ORIGIN)
     if "--no-browser" not in sys.argv:
-        threading.Timer(0.5, lambda: webbrowser.open(ORIGIN)).start()
+        threading.Timer(0.5, lambda: webbrowser.open(start_url)).start()
+    else:
+        print("Open this URL in your browser to start a session: %s" % start_url)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

@@ -90,9 +90,13 @@ python3 server.py
 The app opens at **http://localhost:8484**. Click **Sign in with AWS Builder ID**, finish sign-in, and
 the catalog loads.
 
+The server generates a random secret on each run and opens your browser at `/?k=<secret>`, which sets an
+HttpOnly session cookie. `/api`, `/auth` and `/local` calls without that cookie get a 401, so other local
+processes or users can't use your signed-in session.
+
 Options:
 
-- `python3 server.py --no-browser` doesn't open a browser tab.
+- `python3 server.py --no-browser` doesn't open a browser tab; it prints the secret URL to open yourself.
 - `OPEN_SEATS_PORT=8485 python3 server.py` uses another port. It must be one of the Events API's reserved
   loopback ports, 8484 to 8489.
 
@@ -107,10 +111,24 @@ option), so Open Seats can't be a public website. Everything you reserve or bloc
 schedule and shows up in the official re:Invent app. The project page at
 [openseats.avinashdalvi.com](https://openseats.avinashdalvi.com) (source in `site/`) explains how to run it.
 
+## Tests
+
+```
+python3 -m unittest
+```
+
+Runs `test_local_auth.py` (local-server cookie auth, `/logout` and the Builder ID logout URL) and `test_proxy_path.py` (proxy path allow-list). Both
+are offline and never contact AWS.
+
 ## Security notes
 
 - Tokens are held only in the server process's memory. Stopping the server forgets them. **Sign out**
-  revokes the refresh token.
+  revokes the refresh token and clears all local token and sign-in state, then sends the browser to AWS's
+  documented [logout URL](https://docs.aws.amazon.com/events/latest/devguide/auth-signing-out.html). That ends
+  both the AWS and AWS Builder ID browser sessions (so you really have to sign in again; AWS ignores
+  `prompt=login`/`max_age=0`) and returns to `/logout` here, a bare redirect to `/`. It also signs you out of
+  Builder ID in that browser. If that step fails you are still signed out locally; you can also sign out at
+  [profile.aws.amazon.com](https://profile.aws.amazon.com).
 - The server binds to `127.0.0.1` and rejects requests whose `Host` isn't `localhost`/`127.0.0.1`
   (DNS-rebinding protection).
 - Every state-changing request needs a custom `X-Open-Seats` header. Another website can't send it
