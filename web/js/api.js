@@ -56,6 +56,13 @@ export async function signOut() {
   await fetch('/auth/logout', { method: 'POST', headers: { 'X-Open-Seats': '1' } });
 }
 
+/** Official AWS logout URL (ends the AWS and Builder ID browser sessions); fetch before signing out. */
+export async function builderIdLogoutUrl() {
+  const res = await fetch('/auth/logout-url', { headers: { Accept: 'application/json', 'X-Open-Seats': '1' } });
+  if (!res.ok) throw new Error('logout url unavailable');
+  return (await res.json()).url;
+}
+
 /** Walk every page (the API has no server-side filter). onProgress(loaded, total). */
 export async function loadAllSessions(onProgress) {
   const all = [];

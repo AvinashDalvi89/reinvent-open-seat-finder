@@ -1,5 +1,7 @@
 import http.client
+import json
 import threading
+import urllib.parse
 import unittest
 from unittest import mock
 
@@ -61,6 +63,31 @@ class LocalAuthTest(unittest.TestCase):
         csrf = auth
         self.assertEqual(self.req("POST", "/api/events/reinvent2026/reservations", csrf).status, 200)
         self.assertEqual(self.req("POST", "/auth/logout", csrf).status, 200)
+
+    def test_builder_id_logout_url(self):
+        url = server.builder_id_logout_url("http://localhost:8484")
+        self.assertTrue(url.startswith("https://idp.awsevents.com/oidc/logout?redirect_uri="))
+        inner = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)["redirect_uri"][0]
+        self.assertEqual(
+            inner,
+            "https://oauth.awsevents.com/logout?client_id=%s&logout_uri=http://localhost:8484/logout" % server.CLIENT_ID)
+        self.assertNotIn("&", url.split("redirect_uri=")[1])
+
+    def test_logout_landing_needs_no_cookie_and_redirects_home(self):
+        res = self.req("GET", "/logout")
+        self.assertEqual(res.status, 302)
+        self.assertEqual(res.getheader("Location"), "/?auth=signedout")
+        self.assertEqual(self.req("GET", "/auth/status").status, 401)
+
+    def test_logout_url_endpoint_needs_cookie_and_uses_request_host(self):
+        self.assertEqual(self.req("GET", "/auth/logout-url").status, 401)
+        auth = {"Cookie": "open_seats_session=" + server.LOCAL_SECRET}
+        conn = http.client.HTTPConnection("127.0.0.1", PORT, timeout=5)
+        conn.request("GET", "/auth/logout-url", headers=dict(auth, Host="127.0.0.1:%d" % PORT))
+        body = json.loads(conn.getresponse().read())
+        conn.close()
+        inner = urllib.parse.parse_qs(urllib.parse.urlsplit(body["url"]).query)["redirect_uri"][0]
+        self.assertTrue(inner.endswith("logout_uri=http://127.0.0.1:%d/logout" % PORT))
 
     def test_static_pages_stay_open(self):
         self.assertEqual(self.req("GET", "/").status, 200)

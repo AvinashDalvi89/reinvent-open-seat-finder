@@ -156,7 +156,13 @@ function bindControls() {
   $('reset-btn').addEventListener('click', resetFilters);
   $('more-btn').addEventListener('click', () => { state.shown += PAGE; render(); });
   $('refresh-btn').addEventListener('click', load);
-  $('signout-btn').addEventListener('click', async () => { await api.signOut(); location.replace('/?auth=signedout'); });
+  $('signout-btn').addEventListener('click', async () => {
+    // Needs the cookie, so fetch before the local sign-out; failure just skips the AWS step.
+    const logoutUrl = await api.builderIdLogoutUrl().catch(() => null);
+    try { await api.signOut(); } catch { /* best effort; server clears state itself */ }
+    // The AWS chain returns to /logout, which lands on /?auth=signedout.
+    if (logoutUrl) location.assign(logoutUrl); else location.replace('/?auth=signedout');
+  });
   $('clear-sel-btn').addEventListener('click', () => { state.selected.clear(); render(); });
   $('reserve-btn').addEventListener('click', () => submit('reserve'));
   $('fav-btn').addEventListener('click', () => submit('favorite'));

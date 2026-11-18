@@ -41,6 +41,8 @@ CLIENT_ID = "7vmom55m1qstvq8i71ph127bfq"  # public, shared client (no secret; PK
 AUTHORIZE_URL = "https://oauth.awsevents.com/oauth2/authorize"
 TOKEN_URL = "https://oauth.awsevents.com/oauth2/token"
 REVOKE_URL = "https://oauth.awsevents.com/oauth2/revoke"
+IDP_LOGOUT_URL = "https://idp.awsevents.com/oidc/logout"
+HOSTED_LOGOUT_URL = "https://oauth.awsevents.com/logout"
 API_BASE = "https://api.awsevents.com/v1"
 SCOPE = "openid email events/access"
 WEB_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
@@ -48,6 +50,12 @@ WEB_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
 CALENDAR_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "calendar.json")
 ALLOWED_HOSTS = {"localhost:%d" % PORT, "127.0.0.1:%d" % PORT}
 CSRF_HEADER = "X-Open-Seats"  # custom header: cross-site pages can't send it without a preflight we never answer
+
+
+def builder_id_logout_url(origin):
+    """One navigation that ends both the AWS brokering and Builder ID browser sessions."""
+    inner = "%s?client_id=%s&logout_uri=%s/logout" % (HOSTED_LOGOUT_URL, CLIENT_ID, origin)  # as in the AWS docs
+    return IDP_LOGOUT_URL + "?redirect_uri=" + urllib.parse.quote(inner, safe="")
 
 
 class TokenStore:
@@ -192,6 +200,9 @@ class Handler(BaseHTTPRequestHandler):
         url = urllib.parse.urlsplit(self.path)
         if url.path == "/callback":
             return self._callback(urllib.parse.parse_qs(url.query))
+        if url.path == "/logout":
+            # Landing point after the AWS logout chain. Exposes nothing: just bounces to the open static page.
+            return self._redirect("/?auth=signedout")
         key = urllib.parse.parse_qs(url.query).get("k", [""])[0]
         if url.path == "/" and key and hmac.compare_digest(key.encode(), LOCAL_SECRET.encode()):
             self.send_response(302)
@@ -199,7 +210,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Location", "/")
             self.send_header("Content-Length", "0")
             return self.end_headers()
-        if url.path == "/auth/login" or url.path == "/auth/status" or url.path == "/local/calendar.json" or url.path.startswith("/api/"):
+        if url.path in ("/auth/login", "/auth/status", "/auth/logout-url") or url.path == "/local/calendar.json" or url.path.startswith("/api/"):
             if not self._authed():
                 return self._json(401, {"message": "Unauthorized: open the URL printed by the server."})
         if url.path == "/auth/login":
@@ -209,6 +220,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(404, {"message": "No data/calendar.json"})
             with open(CALENDAR_FILE, "rb") as fh:
                 return self._send(200, fh.read())
+        if url.path == "/auth/logout-url":
+            # Same host form/port the page is on; logout_uri must match a registered one exactly.
+            origin = "http://" + self.headers.get("Host", "")
+            return self._json(200, {"url": builder_id_logout_url(origin)})
         if url.path == "/auth/status":
             return self._json(200, {"signedIn": tokens.signed_in})
         if url.path.startswith("/api/"):
